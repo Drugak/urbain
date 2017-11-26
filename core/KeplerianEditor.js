@@ -5,7 +5,7 @@ class KeplerianEditor
         this.trajectory = trajectory;
 
         this.initAnglesListener = this.initAngles.bind(this);
-        document.addEventListener('vr_render', this.initAnglesListener);
+        document.addEventListener(Events.RENDER, this.initAnglesListener);
 
         this.raanAngleColor = 0x7FFFD4; //lightblue
         this.aopAngleColor  = 0x9966CC; //violet
@@ -66,9 +66,9 @@ class KeplerianEditor
             true
         );
 
-        document.removeEventListener('vr_render', this.initAnglesListener);
+        document.removeEventListener(Events.RENDER, this.initAnglesListener);
         this.updateAnglesListener = this.updateAngles.bind(this);
-        document.addEventListener('vr_render', this.updateAnglesListener);
+        document.addEventListener(Events.RENDER, this.updateAnglesListener);
     }
 
     updateAngles(event) {
@@ -102,7 +102,7 @@ class KeplerianEditor
         this.incAngle.remove();
         this.taAngle.remove();
 
-        document.removeEventListener('vr_render', this.updateAnglesListener);
+        document.removeEventListener(Events.RENDER, this.updateAnglesListener);
     }
 
     calculateAdditionalParameters(keplerianObject) {

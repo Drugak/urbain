@@ -9,7 +9,7 @@ $scripts = array_merge(
         getDirScripts('interface'),
         getDirScripts('ui')
     )),
-    ['algebra.js', 'const.js', 'ssdata.js']
+    ['algebra.js']
 );
 $scripts = array_map('addTime', $scripts);
 ?>
@@ -47,6 +47,7 @@ $scripts = array_map('addTime', $scripts);
 
 <body>
 <script type="text/javascript" src="<?= addTime('builtin.js') ?>"></script>
+<script type="text/javascript" src="<?= addTime('solar_system.js') ?>"></script>
 <script type="text/javascript" src="<?= addTime('main.js') ?>"></script>
 
 <div id="leftPanel"></div>
@@ -64,12 +65,12 @@ $scripts = array_map('addTime', $scripts);
     <table class="metrics">
         <tr>
             <td style="width: 80px"><b>of</b></td>
-            <td id="metricsOf">Cassini</td>
+            <td id="metricsOf"></td>
         </tr>
 
         <tr>
             <td><b>relative to</b></td>
-            <td id="relativeTo">Sun</td>
+            <td id="relativeTo"></td>
         </tr>
     </table>
 
