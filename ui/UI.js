@@ -10,16 +10,26 @@ class UI
         document.addEventListener(Events.SELECT, this.handleSelect.bind(this));
         document.addEventListener(Events.DESELECT, this.handleDeselect.bind(this));
 
+        const dropdownList1 = $('#targetSelect');
         let selections = '';
         for (const id in objectsForTracking) {
             selections += '<option value="' + id + '">' + objectsForTracking[id] + '</option>';
         }
-
-        const dropdownList = $('#targetSelect');
-        dropdownList
+        dropdownList1
             .html(selections)
-            .on('change', () => sim.camera.setOrbitingPoint(dropdownList.val(), true))
-            .val(sim.settings.trackingObject);
+            .on('change', () => sim.camera.changeOrigin(dropdownList1.val()))
+            .val(sim.camera.referenceFrame.originId);
+
+
+        const dropdownList2 = $('#rfTypeSelect');
+        selections = '';
+        for (const id in Camera.selectableReferenceFrameTypes) {
+            selections += '<option value="' + id + '">' + Camera.selectableReferenceFrameTypes[id] + '</option>';
+        }
+        dropdownList2
+            .html(selections)
+            .on('change', () => sim.camera.changeReferenceFrameType(dropdownList2.val()))
+            .val(sim.camera.frameType);
 
         this.handleTimeScaleChange();
         this.handleDeselect();
@@ -74,6 +84,10 @@ class UI
 
     updateTarget(value) {
         $('#targetSelect').val(value);
+    }
+
+    updateFrameType(value) {
+        $('#rfTypeSelect').val(value);
     }
 
     updateTime(date) {
