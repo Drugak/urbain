@@ -17,8 +17,8 @@ $scripts = array_map('addTime', $scripts);
 <html>
 <head>
     <link rel="stylesheet" href="ui.css"/>
-    <script src="vendor/jquery-3.2.1.min.js"></script>
-    <script src="vendor/three.min.js"></script>
+    <script src="../vendor/jquery-3.2.1.min.js"></script>
+    <script src="../vendor/three.min.js"></script>
 
     <?php foreach ($scripts as $script) { ?>
         <script src="<?= $script ?>"></script>
