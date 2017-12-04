@@ -80,6 +80,11 @@ class Vector extends Array
         ]);
     }
 
+    angle(vec) {
+        const cos = this.dot(vec) / this.mag / vec.mag;
+        return (cos >= 1) ? 0 : ((cos <= -1) ? Math.PI : Math.acos(cos));
+    }
+
     add_(vec) {
         for (let i = 0; i < this.length; ++i) {
             this[i] += vec[i];
@@ -108,6 +113,19 @@ class Vector extends Array
         return this;
     }
 
+    unit_() {
+        return this.div_(this.mag);
+    }
+
+    project_(vec) {
+        let axis = vec.unit();
+        return this.sub_(axis.mul_(this.dot(axis)));
+    }
+
+    rotate_(axis, radians) {
+        return (new Quaternion(axis, radians)).rotate_(this);
+    }
+
     add(vec) {
         return this.copy().add_(vec);
     }
@@ -124,8 +142,16 @@ class Vector extends Array
         return this.copy().div_(scalar);
     }
 
-    angle(vec) {
-        return Math.acos(this.dot(vec) / this.mag / vec.mag);
+    unit() {
+        return this.copy().unit_();
+    }
+
+    project(vec) {
+        return this.copy().project_(vec);
+    }
+
+    rotate(axis, radians) {
+        return this.copy().rotate_(axis, radians);
     }
 
     rotateX(radians) {
@@ -391,6 +417,23 @@ class Quaternion
 }
 
 const TWO_PI = 2 * Math.PI;
+
+function newtonSolve(func, start, d, maxError, maxSteps) {
+    let step = 0;
+    let val = start;
+    let error;
+
+    do {
+        const v1 = func(val);
+        const v2 = func(val + d);
+        const diff = (v2 - v1) / d;
+        error = Math.abs(v1);
+        val -= v1 / diff;
+        step += 1;
+    } while (error > maxError && step < maxSteps);
+
+    return (error > maxError) ? false : val;
+}
 
 function deg2rad(degrees) {
     return degrees / 180 * Math.PI;

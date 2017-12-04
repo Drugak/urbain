@@ -1,44 +1,42 @@
 class Simulation
 {
     init(domElementId, starSystemConfig) {
+        this.scene = new THREE.Scene();
+        this.textureLoader = new THREE.TextureLoader();
+        this.renderer = new THREE.WebGLRenderer({antialias: true});
+        this.rendererEvents = new EventHandler(this.renderer.domElement);
+
+        this.selection = new SelectionHandler();
+
         this.starSystem = new StarSystem(starSystemConfig.id);
 
         StarSystemLoader.loadFromConfig(this.starSystem, starSystemConfig);
 
-        this.time = new TimeLine(TimeLine.getEpochByDate(new Date()), 0.001, true);
+        this.time = new TimeLine(TimeLine.getEpochByDate(new Date(1516193355000 + 86400000*30*4)), 86.4 * 0.005, false);
 
-        this.scene = new THREE.Scene();
         this.scene.add(new THREE.AmbientLight(0xFFEFD5, 0.15));
 
-        this.renderer = new THREE.WebGLRenderer({antialias: true});
         this.renderer.setSize(window.innerWidth, window.innerHeight);
 
         this.domElement = document.getElementById(domElementId);
         this.domElement.appendChild(this.renderer.domElement);
         this.domElement.addEventListener('resize', this.onWindowResize.bind(this));
 
-        this.rendererEvents = new EventHandler(this.renderer.domElement);
-
         this.camera = new Camera(
             this.renderer.domElement,
             this.starSystem.getObjectReferenceFrameId(
-                this.starSystem.mainObject,
-                ReferenceFrame.INERTIAL_BODY_EQUATORIAL
+                SUN,
+                ReferenceFrame.INERTIAL_ECLIPTIC
             ),
-            new Vector([30000, 30000, 10000])
+            new Vector([1, 1, 500000000])
         );
 
-        this.textureLoader = new THREE.TextureLoader();
-
         this.raycaster = new VisualRaycaster(this.renderer.domElement, this.camera.threeCamera, 7);
-
-        this.selection = new SelectionHandler();
 
         this.ui = new UI(5, this.starSystem.getObjectNames());
 
         document.dispatchEvent(new CustomEvent(
-            Events.LOAD_FINISH,
-            {detail: {scene: this.scene}}
+            Events.LOAD_FINISH
         ));
     }
 

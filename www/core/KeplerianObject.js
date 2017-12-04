@@ -23,7 +23,15 @@ class KeplerianObject
     }
 
     updateMeanMotion() {
-        this.meanMotion = Math.sqrt(this._mu / this._sma) / this._sma;
+        this.meanMotion = Math.sqrt(this._mu / Math.abs(this._sma)) / Math.abs(this._sma);
+    }
+
+    get isHyperbolic() {
+        return this._e > 1;
+    }
+
+    get isElliptic() {
+        return this._e < 1;
     }
 
     get mu() {
@@ -117,7 +125,11 @@ class KeplerianObject
     }
 
     getMeanAnomalyByEccentricAnomaly(ea) {
-        return ea - this._e * Math.sin(ea);
+        if (this.isElliptic) {
+            return ea - this._e * Math.sin(ea);
+        } else {
+            return this._e * Math.sinh(ea) - ea;
+        }
     }
 
     getMeanAnomalyByTrueAnomaly(ta) {
@@ -129,31 +141,51 @@ class KeplerianObject
     getEccentricAnomalyByMeanAnomaly(ma) {
         const maxIter = 30;
         const delta = 0.00000001;
-        let M = ma / (2.0 * Math.PI);
+        let M = ma;
         let E, F, i = 0;
 
-        M = 2.0 * Math.PI * (M - Math.floor(M));
+        if (this.isElliptic) {
+            M = M / (2.0 * Math.PI);
+            M = 2.0 * Math.PI * (M - Math.floor(M));
 
-        E = (this._e < 0.8) ? M : Math.PI;
+            E = (this._e < 0.8) ? M : Math.PI;
 
-        F = E - this._e * Math.sin(M) - M;
-
-        while ((Math.abs(F) > delta) && (i < maxIter)) {
-            E = E - F / (1.0 - this._e * Math.cos(E));
             F = E - this._e * Math.sin(E) - M;
-            i = i + 1;
+
+            while ((Math.abs(F) > delta) && (i < maxIter)) {
+                E = E - F / (1.0 - this._e * Math.cos(E));
+                F = E - this._e * Math.sin(E) - M;
+                i = i + 1;
+            }
+        } else {
+            E = (Math.log(2 * (Math.abs(M) + 1/3)) + 1) / this._e + (1 - 1 / this._e) * Math.asinh(Math.abs(M) / this._e);
+            E *= Math.sign(M);
+
+            F = this._e * Math.sinh(E) - E - M;
+
+            while ((Math.abs(F) > delta) && (i < maxIter)) {
+                E = E - F / (this._e * Math.cosh(E) - 1);
+                F = this._e * Math.sinh(E) - E - M;
+                i = i + 1;
+            }
         }
 
         return E;
     }
 
     getEccentricAnomalyByTrueAnomaly(ta) {
-        const cos = Math.cos(ta);
-        const sin = Math.sin(ta);
-        const cosE = (this._e + cos) / (1 + this._e * cos);
-        const sinE = Math.sqrt(1 - this._e * this._e) * sin / (1 + this._e * cos);
+        if (this.isElliptic) {
+            const cos = Math.cos(ta);
+            const sin = Math.sin(ta);
+            const cosE = (this._e + cos) / (1 + this._e * cos);
+            const sinE = Math.sqrt(1 - this._e * this._e) * sin / (1 + this._e * cos);
 
-        return getAngleBySinCos(sinE, cosE);
+            return getAngleBySinCos(sinE, cosE);
+        } else {
+            return 2 * Math.atanh(Math.tan(ta / 2) / Math.sqrt((this._e + 1) / (this._e - 1)));
+            // const cos = Math.cos(ta);
+            // return Math.sign(ta) * Math.acosh((cos - this._e) / (1 - this._e * cos));
+        }
     }
 
     getTrueAnomalyByMeanAnomaly(ma) {
@@ -163,40 +195,66 @@ class KeplerianObject
     }
 
     getTrueAnomalyByEccentricAnomaly(ea) {
-        const phi = Math.atan2(Math.sqrt(1.0 - this._e * this._e) * Math.sin(ea), Math.cos(ea) - this._e);
-        return (phi > 0) ? phi : (phi + 2 * Math.PI);
+        if (this.isElliptic) {
+            const phi = Math.atan2(Math.sqrt(1.0 - this._e * this._e) * Math.sin(ea), Math.cos(ea) - this._e);
+            return (phi > 0) ? phi : (phi + 2 * Math.PI);
+        } else {
+            return 2 * Math.atan(Math.sqrt((this._e + 1) / (this._e - 1)) * Math.tanh(ea / 2));
+            // const cos = Math.cosh(ea);
+            // return Math.sign(ea) * Math.acos((this._e - cos) / (this._e * cos - 1));
+        }
     }
 
-    getEllipseCoordsByTrueAnomaly(ta) {
+    getOwnCoordsByTrueAnomaly(ta) {
         const r = this._sma * (1.0 - this._e * this._e) / (1 + this._e * Math.cos(ta));
         return new Vector([r * Math.cos(ta), r * Math.sin(ta), 0]);
+    }
+
+    getAsimptoteTa() {
+        if (this.isElliptic) {
+            return false;
+        }
+        return Math.acos(-1 / this._e);
     }
 
     /**
      *  @see http://microsat.sm.bmstu.ru/e-library/Ballistics/kepler.pdf
      */
     getStateByEpoch(epoch) {
-        const ea = this.getEccentricAnomalyByEpoch(epoch);
-        const cos = Math.cos(ea);
-        const sin = Math.sin(ea);
-        const koeff = Math.sqrt(this._mu / this._sma) / (1 - this._e * cos);
+        if (this.isElliptic) {
+            const ea = this.getEccentricAnomalyByEpoch(epoch);
+            const cos = Math.cos(ea);
+            const sin = Math.sin(ea);
+            const koeff = Math.sqrt(this._mu / this._sma) / (1 - this._e * cos);
 
-        let pos = new Vector([
-            this._sma * (cos - this._e),
-            this._sma * Math.sqrt(1 - this._e * this._e) * sin,
-            0
-        ]);
+            let pos = new Vector([
+                this._sma * (cos - this._e),
+                this._sma * Math.sqrt(1 - this._e * this._e) * sin,
+                0
+            ]);
 
-        let vel = new Vector([
-            -koeff * sin,
-            koeff * Math.sqrt(1 - this._e * this._e) * cos,
-            0
-        ]);
+            let vel = new Vector([
+                -koeff * sin,
+                koeff * Math.sqrt(1 - this._e * this._e) * cos,
+                0
+            ]);
 
-        return new StateVector(
-            pos.rotateZ(this._aop).rotateX(this._inc).rotateZ(this._raan),
-            vel.rotateZ(this._aop).rotateX(this._inc).rotateZ(this._raan)
-        );
+            return new StateVector(
+                pos.rotateZ(this._aop).rotateX(this._inc).rotateZ(this._raan),
+                vel.rotateZ(this._aop).rotateX(this._inc).rotateZ(this._raan)
+            );
+        } else {
+            const ta = this.getTrueAnomalyByEpoch(epoch);
+            const orbitalQuat = this.getOrbitalFrameQuaternion();
+            const pos = this.getOwnCoordsByTrueAnomaly(ta);
+            const flightPathAngle = Math.atan(this._e * Math.sin(ta) / (1 + this._e * Math.cos(ta)));
+            let vel = new Vector([Math.sqrt(this._mu * (2 / pos.mag - 1 / this._sma)), 0, 0]);
+
+            return new StateVector(
+                orbitalQuat.rotate_(pos),
+                orbitalQuat.rotate_(vel.rotateZ(ta + Math.PI / 2 - flightPathAngle)),
+            );
+        }
     }
 
     getNormalVector() {
@@ -242,6 +300,8 @@ class KeplerianObject
         const sinE = (pos.mag * radVel) / (e * Math.sqrt(mu * sma));
         let ta = Math.atan2((Math.sqrt(1.0 - e * e) * sinE) , (cosE - e));
         ta = (ta > 0) ? ta : (ta + 2 * Math.PI);
+
+        ta = Math.acos((sma*(1 - e*e) / pos.mag - 1) / e) * Math.sign(radVel);
 
         const aop = ((u - ta) > 0) ? (u - ta) : 2 * Math.PI + (u - ta);
 

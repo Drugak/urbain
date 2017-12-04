@@ -4,8 +4,7 @@ class VisualReferenceFrame extends VisualModelAbstract
         super();
         
         this.referenceFrame = referenceFrame;
-
-        this.threeObj = new THREE.AxisHelper(1);
+        this.setThreeObj(new THREE.AxisHelper(1));
     }
 
     render(epoch) {

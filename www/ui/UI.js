@@ -3,7 +3,7 @@ class UI
     constructor(precision, objectsForTracking) {
         this.precision = precision;
 
-        $('#timeScaleSlider').on('input change', this.handleTimeScaleChange.bind(this));
+        $('#timeScaleSlider').val(Math.log(sim.time.timeScale * 1000) / Math.log(984362.83) / 1.2).on('input change', this.handleTimeScaleChange.bind(this));
         $('#pauseButton').on('click', () => sim.time.togglePause());
 
         this.renderHandler = this.handleRender.bind(this);
@@ -113,7 +113,7 @@ class UI
         $('#incValue' ).html('' + rad2deg( keplerianObject.inc ).toPrecision(this.precision));
         $('#aopValue' ).html('' + rad2deg( keplerianObject.aop ).toPrecision(this.precision));
         $('#raanValue').html('' + rad2deg( keplerianObject.raan).toPrecision(this.precision));
-        $('#taValue'  ).html('' + rad2deg( keplerianObject.ta  ).toPrecision(this.precision));
+        $('#taValue'  ).html('' + rad2deg( keplerianObject.getTrueAnomalyByEpoch(sim.currentEpoch)  ).toPrecision(this.precision));
     }
 
     updateVector(state, vec) {
